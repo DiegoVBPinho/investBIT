@@ -28,6 +28,18 @@ lucro_realizado = df[df["Tipo"] == "Venda"]["Valor (R$)"].sum() - total_gasto_bo
 # Dinheiro disponível = lucro + entrada ainda não usada
 dinheiro_em_caixa = lucro_realizado + entrada_nao_usada
 
+# Calcular o valor de "1 BTC (Estimado)" para cada movimentação
+df["1 BTC (Estimado)"] = df["Valor (R$)"] / df["BTC"].replace(0, 1)  # Previne divisão por zero
+
+# Calcular o Lucro Total e Dinheiro em Caixa com base nas movimentações
+df["Lucro Total (R$)"] = df.apply(
+    lambda row: lucro_realizado if row["Tipo"] == "Venda" else 0, axis=1
+)
+
+df["Dinheiro em Caixa (R$)"] = df.apply(
+    lambda row: lucro_realizado + entrada_nao_usada if row["Tipo"] == "Aplicação" else dinheiro_em_caixa, axis=1
+)
+
 # Streamlit config
 st.set_page_config(page_title="Dashboard BTC", layout="wide")
 st.title("📊 Dashboard de Investimento em Bitcoin")
@@ -39,12 +51,11 @@ col2.metric("Lucro até o momento", f"R$ {lucro_realizado:,.2f}")
 col3.metric("Dinheiro em Caixa", f"R$ {dinheiro_em_caixa:,.2f}")
 
 # Tabela de Movimentações
-df_tabela = df.copy()
-df_tabela["1 BTC (Estimado)"] = df_tabela["Valor (R$)"] / df_tabela["BTC"].replace(0, 1)  # Previne divisão por zero
+df_tabela = df[["Data", "Tipo", "Valor (R$)", "BTC", "1 BTC (Estimado)", "Lucro Total (R$)", "Dinheiro em Caixa (R$)"]]
 
 # Exibindo a Tabela
 st.subheader("📅 Histórico de Movimentações")
-st.dataframe(df_tabela[["Data", "Tipo", "Valor (R$)", "BTC", "1 BTC (Estimado)"]], use_container_width=True)
+st.dataframe(df_tabela, use_container_width=True)
 
 # Gráfico do valor pago por BTC ao longo do tempo
 fig = go.Figure()
