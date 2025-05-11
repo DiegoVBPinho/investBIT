@@ -19,12 +19,14 @@ df = pd.DataFrame(movimentacoes)
 df["Data"] = pd.to_datetime(df["Data"])
 df = df.sort_values("Data")
 
-total_gasto_bolso = 1000.22
-lucro_realizado = df[df["Tipo"] == "Venda"]["Valor (R$)"].sum()
-btc_em_carteira = df[df["Tipo"] == "Compra"]["BTC"].sum() - df[df["Tipo"] == "Venda"]["BTC"].sum()
+# Calculando os valores de "1 BTC (Estimado)" e "Lucro Total"
+df["1 BTC (Estimado)"] = df["Valor (R$)"] / df["BTC"].replace(0, 1)  # Previne divisão por zero
+df["Lucro Total (R$)"] = df.apply(lambda row: row["Valor (R$)"] - df[df["Tipo"] == "Compra"]["Valor (R$)"].sum() if row["Tipo"] == "Venda" else 0, axis=1)
+df["Dinheiro em Caixa (R$)"] = df["Lucro Total (R$)"].cumsum()
 
-# Dinheiro disponível = lucro + entrada ainda não usada
-dinheiro_em_caixa = lucro_realizado + entrada_nao_usada
+# Adicionando valores de "Lucro Total" e "Dinheiro em Caixa" para cada linha
+df["Lucro Total (R$)"] = df["Lucro Total (R$)"].fillna(0).cumsum()
+df["Dinheiro em Caixa (R$)"] = df["Lucro Total (R$)"] + entrada_nao_usada
 
 # Streamlit config
 st.set_page_config(page_title="Dashboard BTC", layout="wide")
@@ -32,21 +34,14 @@ st.title("📊 Dashboard de Investimento em Bitcoin")
 
 # Cabeçalho
 col1, col2, col3 = st.columns(3)
-col1.metric("Dinheiro Investido", f"R$ {total_gasto_bolso:,.2f}")
-col2.metric("Lucro até o momento", f"R$ {lucro_realizado:,.2f}")
-col3.metric("Dinheiro em Caixa", f"R$ {dinheiro_em_caixa:,.2f}")
-
-# Tabela de Movimentações
-df_tabela = df.copy()
-df_tabela["1 BTC (Estimado)"] = df_tabela["Valor (R$)"] / df_tabela["BTC"].replace(0, 1)  # Previne divisão por zero
-df_tabela["Valor Total em Tempo Real (R$)"] = df_tabela.apply(
-    lambda row: row["BTC"] * df_tabela["1 BTC (Estimado)"].iloc[-1] if row["Tipo"] == "Compra" else row["1 BTC (Estimado)"],
-    axis=1
-)
+col1.metric("Dinheiro Investido", f"R$ {df['Valor (R$)'].sum():,.2f}")
+col2.metric("Lucro até o momento", f"R$ {df['Lucro Total (R$)'].iloc[-1]:,.2f}")
+col3.metric("Dinheiro em Caixa", f"R$ {df['Dinheiro em Caixa (R$)'].iloc[-1]:,.2f}")
 
 # Exibindo a Tabela
+df_tabela = df[["Data", "Tipo", "Valor (R$)", "BTC", "1 BTC (Estimado)", "Lucro Total (R$)", "Dinheiro em Caixa (R$)"]]
 st.subheader("📅 Histórico de Movimentações")
-st.dataframe(df_tabela[["Data", "Tipo", "Valor (R$)", "1 BTC (Estimado)", "BTC", "Valor Total em Tempo Real (R$)"]], use_container_width=True)
+st.dataframe(df_tabela, use_container_width=True)
 
 # Gráfico do valor pago por BTC ao longo do tempo
 fig = go.Figure()
