@@ -21,7 +21,7 @@ df = df.sort_values("Data")
 
 total_gasto_bolso = 1000.22
 lucro_realizado = df[df["Tipo"] == "Venda"]["Valor (R$)"].sum()
-btc_em_carteira = df.apply(lambda row: row["BTC"] if "Compra" in row["Tipo"] else -row["BTC"], axis=1).sum()
+btc_em_carteira = df[df["Tipo"] == "Compra"]["BTC"].sum() - df[df["Tipo"] == "Venda"]["BTC"].sum()
 
 # Dinheiro disponível = lucro + entrada ainda não usada
 dinheiro_em_caixa = lucro_realizado + entrada_nao_usada
@@ -40,7 +40,7 @@ col3.metric("Dinheiro em Caixa", f"R$ {dinheiro_em_caixa:,.2f}")
 df_tabela = df.copy()
 df_tabela["1 BTC (Estimado)"] = df_tabela["Valor (R$)"] / df_tabela["BTC"].replace(0, 1)  # Previne divisão por zero
 df_tabela["Valor Total em Tempo Real (R$)"] = df_tabela.apply(
-    lambda row: row["BTC"] * (df_tabela["1 BTC (Estimado)"].iloc[-1] if row["Tipo"] == "Compra" else row["1 BTC (Estimado)"]),
+    lambda row: row["BTC"] * df_tabela["1 BTC (Estimado)"].iloc[-1] if row["Tipo"] == "Compra" else row["1 BTC (Estimado)"],
     axis=1
 )
 
