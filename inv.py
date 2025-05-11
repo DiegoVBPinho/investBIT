@@ -41,14 +41,10 @@ col3.metric("Dinheiro em Caixa", f"R$ {dinheiro_em_caixa:,.2f}")
 # Tabela de Movimentações
 df_tabela = df.copy()
 df_tabela["1 BTC (Estimado)"] = df_tabela["Valor (R$)"] / df_tabela["BTC"].replace(0, 1)  # Previne divisão por zero
-df_tabela["Valor Total em Tempo Real (R$)"] = df_tabela.apply(
-    lambda row: row["BTC"] * (df_tabela["1 BTC (Estimado)"].iloc[-1] if row["Tipo"] == "Compra" else row["1 BTC (Estimado)"]),
-    axis=1
-)
 
 # Exibindo a Tabela
 st.subheader("📅 Histórico de Movimentações")
-st.dataframe(df_tabela[["Data", "Tipo", "Valor (R$)", "BTC", "1 BTC (Estimado)", "Valor Total em Tempo Real (R$)"]], use_container_width=True)
+st.dataframe(df_tabela[["Data", "Tipo", "Valor (R$)", "BTC", "1 BTC (Estimado)"]], use_container_width=True)
 
 # Gráfico do valor pago por BTC ao longo do tempo
 fig = go.Figure()
